@@ -1,14 +1,30 @@
 from datetime import datetime
+from datetime import date
 from flask import Flask
 from flask import request
 from flask_sqlalchemy import SQLAlchemy
-from model import Assignment
-from model import Journal
+from __future__ import print_function
+import pickle
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data_structure.db'
 db = SQLAlchemy(app)
 
+from myautomark.model import Assignment
+from myautomark.model import Journal
+
+
+@app.route("/create_assignment", methods = ['POST'])
+def create_assignment():
+    assign_name, desc, deadline = request.form['name'], request.form['desc'], request.form['deadline']
+    assignment = Assignment(name = assign_name, deadline = date.fromisoformat(deadline), desc = desc)
+    db.session.add(assignment)
+    db.session.commit()
+    return 'success'
 
 @app.route("/submit", methods = ['POST'])
 def submit():
@@ -18,7 +34,7 @@ def submit():
     if assignment == None:
         return '{"success": 0}'
     
-    if now.date() > assignemnt.deadline:
+    if now.date() > assignment.deadline:
         point /= 2
 
     submission = Journal.query.filter_by(student = student, assignment = assign_name).first()
